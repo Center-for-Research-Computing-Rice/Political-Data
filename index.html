@@ -8,14 +8,164 @@
     <script src="https://code.highcharts.com/modules/item-series.js"></script>
     
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
-        .container-wrapper { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 95%; max-width: 1000px; margin-top: 20px; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .controls { text-align: center; margin-bottom: 30px; }
-        select { padding: 10px 20px; border-radius: 25px; border: 2px solid #007bff; font-size: 16px; cursor: pointer; background: white; outline: none; }
-        #chart-container { height: 600px; width: 100%; }
-        #status { font-weight: bold; color: #007bff; margin-bottom: 10px; }
-        .majority-badge { text-align: center; margin-top: -30px; font-size: 18px; color: #444; }
+        * { box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #f0f2f5; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 15px; 
+            margin: 0; 
+        }
+        
+        .container-wrapper { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            width: 100%; 
+            max-width: 1000px; 
+            margin-top: 10px; 
+        }
+        
+        .header { 
+            text-align: center; 
+            margin-bottom: 20px; 
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin: 0 0 10px 0;
+        }
+        
+        .controls { 
+            text-align: center; 
+            margin-bottom: 20px; 
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .controls label {
+            font-size: 14px;
+        }
+        
+        select { 
+            padding: 10px 15px; 
+            border-radius: 25px; 
+            border: 2px solid #007bff; 
+            font-size: 14px; 
+            cursor: pointer; 
+            background: white; 
+            outline: none;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        #chart-container { 
+            height: 500px; 
+            width: 100%; 
+            min-height: 400px;
+        }
+        
+        #status { 
+            font-weight: bold; 
+            color: #007bff; 
+            margin-bottom: 10px; 
+            font-size: 14px;
+        }
+        
+        .majority-badge { 
+            text-align: center; 
+            margin-top: 10px; 
+            font-size: 14px; 
+            color: #444;
+            padding: 10px;
+        }
+
+        /* Media Queries for Small Screens */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .container-wrapper {
+                padding: 15px;
+                margin-top: 5px;
+            }
+
+            .header h1 {
+                font-size: 22px;
+                margin-bottom: 5px;
+            }
+
+            .controls {
+                margin-bottom: 15px;
+                gap: 8px;
+            }
+
+            .controls label {
+                font-size: 13px;
+            }
+
+            select {
+                font-size: 13px;
+                padding: 8px 12px;
+            }
+
+            #chart-container {
+                height: 400px;
+                min-height: 300px;
+            }
+
+            .majority-badge {
+                font-size: 13px;
+                margin-top: 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 8px;
+            }
+
+            .container-wrapper {
+                padding: 12px;
+                border-radius: 8px;
+            }
+
+            .header h1 {
+                font-size: 18px;
+                margin-bottom: 3px;
+            }
+
+            #status {
+                font-size: 12px;
+            }
+
+            .controls label {
+                font-size: 12px;
+            }
+
+            select {
+                font-size: 12px;
+                padding: 8px 10px;
+            }
+
+            #chart-container {
+                height: 300px;
+                min-height: 250px;
+            }
+
+            .majority-badge {
+                font-size: 12px;
+                padding: 8px;
+                margin-top: 5px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -28,7 +178,7 @@
 
     <div class="controls">
         <label for="electionSelect"><b>Select Legislature:</b> </label>
-        <select id="electionSelect" onchange="renderSelection()">
+        <select id="electionSelect" onchange="updateURLParameter(); renderSelection()">
             <option value="">-- Select --</option>
         </select>
     </div>
@@ -96,10 +246,39 @@ function populateDropdown() {
         select.appendChild(opt);
     });
 
-    // Auto-select the first one
-    if (uniqueKeys.length > 0) {
-        select.value = uniqueKeys[0];
-        renderSelection();
+    // Check URL parameters for legislature filter
+    const urlParams = new URLSearchParams(window.location.search);
+    const legislatureParam = urlParams.get('legislature');
+    
+    if (legislatureParam) {
+        // Decode the parameter and try to match it
+        const decodedLegislature = decodeURIComponent(legislatureParam);
+        if (uniqueKeys.includes(decodedLegislature)) {
+            select.value = decodedLegislature;
+            renderSelection();
+        } else {
+            // If parameter doesn't match, select the first one
+            if (uniqueKeys.length > 0) {
+                select.value = uniqueKeys[0];
+                renderSelection();
+            }
+        }
+    } else {
+        // Auto-select the first one if no parameter
+        if (uniqueKeys.length > 0) {
+            select.value = uniqueKeys[0];
+            renderSelection();
+        }
+    }
+}
+
+// Update URL when legislature is changed
+function updateURLParameter() {
+    const selectedKey = document.getElementById('electionSelect').value;
+    if (selectedKey) {
+        const url = new URL(window.location);
+        url.searchParams.set('legislature', selectedKey);
+        window.history.replaceState({ path: url.href }, '', url.href);
     }
 }
 
@@ -118,37 +297,61 @@ function renderSelection() {
 
     if (chart) chart.destroy();
 
+    // Responsive sizing based on screen width
+    const isMobile = window.innerWidth <= 768;
+    const isSmallMobile = window.innerWidth <= 480;
+    
+    const chartSize = isSmallMobile ? '150%' : isMobile ? '160%' : '170%';
+    const titleFontSize = isSmallMobile ? '16px' : isMobile ? '18px' : '24px';
+    const labelFontSize = isSmallMobile ? '10px' : isMobile ? '12px' : '14px';
+
     chart = Highcharts.chart('chart-container', {
-        chart: { type: 'item' },
+        chart: { 
+            type: 'item',
+            responsive: {
+                rules: [{
+                    condition: { maxWidth: 480 },
+                    chartOptions: {
+                        legend: { enabled: true, layout: 'vertical', align: 'center', verticalAlign: 'bottom', y: 0 }
+                    }
+                }]
+            }
+        },
         title: { 
             text: filtered[0].country + ' Election ' + filtered[0].year,
-            style: { fontSize: '24px', fontWeight: 'bold' }
+            style: { fontSize: titleFontSize, fontWeight: 'bold' }
         },
-        subtitle: { text: filtered[0].body },
+        subtitle: { 
+            text: filtered[0].body,
+            style: { fontSize: isSmallMobile ? '11px' : isMobile ? '12px' : '14px' }
+        },
         xAxis: {
             plotLines: [{
                 value: 0,
                 color: '#444',
                 dashStyle: 'LongDash',
-                width: 3,
+                width: 2,
                 zIndex: 5,
                 label: { 
                     text: `Majority: ${majority}`, 
                     verticalAlign: 'top',
                     textAlign: 'center',
-                    y: -15,
-                    style: { fontWeight: 'bold', fontSize: '14px' }
+                    y: -10,
+                    style: { fontWeight: 'bold', fontSize: labelFontSize }
                 }
             }]
         },
         legend: {
-            labelFormat: '{name} <span style="opacity: 0.6">({y})</span>'
+            labelFormat: '{name} <span style="opacity: 0.6">({y})</span>',
+            layout: 'horizontal',
+            align: 'center',
+            verticalAlign: 'top'
         },
         series: [{
             name: 'Seats',
             data: chartData,
             center: ['50%', '88%'],
-            size: '170%',
+            size: chartSize,
             startAngle: -100,
             endAngle: 100,
             dataLabels: { enabled: false }
@@ -160,6 +363,12 @@ function renderSelection() {
         credits: { enabled: false }
     });
 }
+
+// Handle window resize to re-render chart responsively
+window.addEventListener('resize', () => {
+    const selectedKey = document.getElementById('electionSelect').value;
+    if (selectedKey) renderSelection();
+});
 
 // Initialize on page load
 fetchData();
