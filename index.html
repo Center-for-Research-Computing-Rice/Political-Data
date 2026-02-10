@@ -213,11 +213,22 @@ function parseCSV(text) {
     const lines = text.trim().split('\n');
     const headers = lines[0].split(',');
     
+    // Find the index of the Color Hex column
+    const colorHexIndex = headers.findIndex(h => h.trim().toLowerCase().includes('color'));
+    
     // Convert CSV rows to JSON objects
     electionData = lines.slice(1).map(line => {
         // This handle cases where party names might contain commas inside quotes
         const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g); 
         if (!values) return null;
+        
+        // Get color from the Color Hex column (fallback to values[7] if not found)
+        let colorValue = '#808080'; // default gray
+        if (colorHexIndex >= 0 && values[colorHexIndex]) {
+            colorValue = values[colorHexIndex].replace(/"/g, '').trim();
+        } else if (values[7]) {
+            colorValue = values[7].replace(/"/g, '').trim();
+        }
         
         return {
             country: values[0].replace(/"/g, ''),
@@ -226,7 +237,7 @@ function parseCSV(text) {
             year: values[3],
             party: values[4].replace(/"/g, ''),
             seats: parseInt(values[5]),
-            color: values[7].trim()
+            colorHex: colorValue
         };
     }).filter(item => item !== null);
 
@@ -291,7 +302,13 @@ function renderSelection() {
 
     const totalSeats = filtered[0].totalSeats;
     const majority = Math.floor(totalSeats / 2) + 1;
-    const chartData = filtered.map(d => [d.party, d.seats, d.color]);
+    
+    // Create chart data with color information from each party
+    const chartData = filtered.map(d => ({
+        name: d.party,
+        y: d.seats,
+        color: d.colorHex
+    }));
 
     document.getElementById('majority-info').innerHTML = `Total Seats: <b>${totalSeats}</b> | Majority Required: <b>${majority}</b>`;
 
