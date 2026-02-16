@@ -64,6 +64,37 @@
             max-width: 400px;
             margin: 0 auto;
         }
+
+        #legislatureTypeButtons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 10px auto;
+            max-width: 800px;
+        }
+
+        .legislature-btn {
+            padding: 10px 20px;
+            border-radius: 25px;
+            border: 2px solid #007bff;
+            font-size: 14px;
+            cursor: pointer;
+            background: white;
+            color: #007bff;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .legislature-btn:hover {
+            background: #007bff;
+            color: white;
+        }
+
+        .legislature-btn.active {
+            background: #007bff;
+            color: white;
+        }
         
         #chart-container { 
             height: 500px; 
@@ -116,6 +147,15 @@
                 padding: 8px 12px;
             }
 
+            #legislatureTypeButtons {
+                gap: 8px;
+            }
+
+            .legislature-btn {
+                padding: 8px 14px;
+                font-size: 13px;
+            }
+
             #chart-container {
                 height: 400px;
                 min-height: 300px;
@@ -155,6 +195,15 @@
                 padding: 8px 10px;
             }
 
+            #legislatureTypeButtons {
+                gap: 6px;
+            }
+
+            .legislature-btn {
+                padding: 7px 12px;
+                font-size: 12px;
+            }
+
             #chart-container {
                 height: 300px;
                 min-height: 250px;
@@ -177,14 +226,8 @@
     </div>
 
     <div class="controls">
-        <label for="countrySelect"><b>Select Country:</b> </label>
-        <select id="countrySelect" onchange="updateCountryParameter(); populateLegislatureTypeDropdown()">
-            <option value="">-- Select --</option>
-        </select>
-        <label for="legislatureTypeSelect"><b>Select Legislature Type:</b> </label>
-        <select id="legislatureTypeSelect" onchange="updateLegislatureTypeParameter(); renderSelection()">
-            <option value="">-- Select --</option>
-        </select>
+        <label><b>Select Legislature Type:</b> </label>
+        <div id="legislatureTypeButtons"></div>
     </div>
 
     <div id="chart-container"></div>
@@ -241,6 +284,7 @@ function parseCSV(text) {
             year: values[3],
             party: values[4].replace(/"/g, ''),
             seats: parseInt(values[5]),
+            ideologyGroup: values[6].replace(/"/g, ''),
             colorHex: colorValue
         };
     }).filter(item => item !== null);
@@ -250,52 +294,43 @@ function parseCSV(text) {
 
 // 3. Setup Dropdowns
 function populateDropdown() {
-    const countrySelect = document.getElementById('countrySelect');
-    
     // Get unique countries
     const uniqueCountries = [...new Set(electionData.map(d => d.country))].sort();
-    
-    uniqueCountries.forEach(country => {
-        let opt = document.createElement('option');
-        opt.value = country;
-        opt.innerHTML = country;
-        countrySelect.appendChild(opt);
-    });
 
     // Check URL parameters for country filter
     const urlParams = new URLSearchParams(window.location.search);
     const countryParam = urlParams.get('country');
     
+    let selectedCountry;
     if (countryParam) {
         // Decode the parameter and try to match it
         const decodedCountry = decodeURIComponent(countryParam);
-        if (uniqueCountries.includes(decodedCountry)) {
-            countrySelect.value = decodedCountry;
-            populateLegislatureTypeDropdown();
-        } else {
-            // If parameter doesn't match, select the first one
-            if (uniqueCountries.length > 0) {
-                countrySelect.value = uniqueCountries[0];
-                populateLegislatureTypeDropdown();
-            }
-        }
+        selectedCountry = uniqueCountries.includes(decodedCountry) ? decodedCountry : uniqueCountries[0];
     } else {
         // Auto-select the first one if no parameter
-        if (uniqueCountries.length > 0) {
-            countrySelect.value = uniqueCountries[0];
-            populateLegislatureTypeDropdown();
-        }
+        selectedCountry = uniqueCountries.length > 0 ? uniqueCountries[0] : null;
     }
+    
+    // Store the selected country globally
+    window.selectedCountry = selectedCountry;
+    
+    // Update URL with the selected country
+    if (selectedCountry) {
+        const url = new URL(window.location);
+        url.searchParams.set('country', selectedCountry);
+        window.history.replaceState({ path: url.href }, '', url.href);
+    }
+    
+    populateLegislatureTypeDropdown();
 }
 
-// Populate legislature type dropdown based on selected country
+// Populate legislature type buttons based on selected country
 function populateLegislatureTypeDropdown() {
-    const legislatureTypeSelect = document.getElementById('legislatureTypeSelect');
-    const countrySelect = document.getElementById('countrySelect');
-    const selectedCountry = countrySelect.value;
+    const buttonContainer = document.getElementById('legislatureTypeButtons');
+    const selectedCountry = window.selectedCountry;
     
-    // Clear existing options except the first one
-    legislatureTypeSelect.innerHTML = '<option value="">-- Select --</option>';
+    // Clear existing buttons
+    buttonContainer.innerHTML = '';
     
     if (!selectedCountry) return;
     
@@ -303,18 +338,37 @@ function populateLegislatureTypeDropdown() {
     const countryData = electionData.filter(d => d.country === selectedCountry);
     const uniqueTypes = [...new Set(countryData.map(d => d.body))].sort();
     
-    uniqueTypes.forEach(type => {
-        let opt = document.createElement('option');
-        opt.value = type;
-        opt.innerHTML = type;
-        legislatureTypeSelect.appendChild(opt);
+    uniqueTypes.forEach((type, index) => {
+        let btn = document.createElement('button');
+        btn.className = 'legislature-btn';
+        btn.innerHTML = type;
+        btn.onclick = () => selectLegislatureType(type, btn);
+        buttonContainer.appendChild(btn);
+        
+        // Auto-select the first button
+        if (index === 0) {
+            btn.classList.add('active');
+            window.selectedLegislatureType = type;
+            renderSelection();
+        }
+    });
+}
+
+// Handle legislature type button selection
+function selectLegislatureType(type, buttonElement) {
+    // Remove active class from all buttons
+    document.querySelectorAll('.legislature-btn').forEach(btn => {
+        btn.classList.remove('active');
     });
     
-    // Auto-select the first type
-    if (uniqueTypes.length > 0) {
-        legislatureTypeSelect.value = uniqueTypes[0];
-        renderSelection();
-    }
+    // Add active class to clicked button
+    buttonElement.classList.add('active');
+    
+    // Update selected legislature type
+    window.selectedLegislatureType = type;
+    
+    // Render the chart with the new selection
+    renderSelection();
 }
 
 // Update URL when legislature type is changed
@@ -322,20 +376,10 @@ function updateLegislatureTypeParameter() {
     // URL is not updated when legislature type changes
 }
 
-// Update URL when country is changed
-function updateCountryParameter() {
-    const selectedCountry = document.getElementById('countrySelect').value;
-    if (selectedCountry) {
-        const url = new URL(window.location);
-        url.searchParams.set('country', selectedCountry);
-        window.history.replaceState({ path: url.href }, '', url.href);
-    }
-}
-
 // 4. Render the Chart
 function renderSelection() {
-    const selectedType = document.getElementById('legislatureTypeSelect').value;
-    const selectedCountry = document.getElementById('countrySelect').value;
+    const selectedType = window.selectedLegislatureType;
+    const selectedCountry = window.selectedCountry;
     
     const filtered = electionData.filter(d => d.body === selectedType && d.country === selectedCountry);
     
@@ -348,7 +392,8 @@ function renderSelection() {
     const chartData = filtered.map(d => ({
         name: d.party,
         y: d.seats,
-        color: d.colorHex
+        color: d.colorHex,
+        ideologyGroup: d.ideologyGroup
     }));
 
     document.getElementById('majority-info').innerHTML = `Total Seats: <b>${totalSeats}</b> | Majority Required: <b>${majority}</b>`;
@@ -416,7 +461,7 @@ function renderSelection() {
         }],
         tooltip: {
             headerFormat: '',
-            pointFormat: '<b>{point.name}</b>: {point.y} seats'
+            pointFormat: '<b>{point.name}</b><br/>Ideology: {point.ideologyGroup}<br/>{point.y} seats'
         },
         credits: { enabled: false }
     });
