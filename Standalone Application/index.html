@@ -172,17 +172,13 @@
 
 <div class="container-wrapper">
     <div class="header">
-        
+        <h1>Political Orientation Dashboard</h1>
         <div id="status">Loading data from Google Sheets...</div>
     </div>
 
     <div class="controls">
-        <label for="countrySelect"><b>Select Country:</b> </label>
-        <select id="countrySelect" onchange="updateCountryParameter(); populateLegislatureTypeDropdown()">
-            <option value="">-- Select --</option>
-        </select>
-        <label for="legislatureTypeSelect"><b>Select Legislature Type:</b> </label>
-        <select id="legislatureTypeSelect" onchange="updateLegislatureTypeParameter(); renderSelection()">
+        <label for="electionSelect"><b>Select Legislature:</b> </label>
+        <select id="electionSelect" onchange="updateURLParameter(); renderSelection()">
             <option value="">-- Select --</option>
         </select>
     </div>
@@ -248,96 +244,59 @@ function parseCSV(text) {
     populateDropdown();
 }
 
-// 3. Setup Dropdowns
+// 3. Setup Dropdown
 function populateDropdown() {
-    const countrySelect = document.getElementById('countrySelect');
+    const select = document.getElementById('electionSelect');
+    // Get unique "Country - Body" combinations
+    const uniqueKeys = [...new Set(electionData.map(d => `${d.country} - ${d.body}`))];
     
-    // Get unique countries
-    const uniqueCountries = [...new Set(electionData.map(d => d.country))].sort();
-    
-    uniqueCountries.forEach(country => {
+    uniqueKeys.forEach(key => {
         let opt = document.createElement('option');
-        opt.value = country;
-        opt.innerHTML = country;
-        countrySelect.appendChild(opt);
+        opt.value = key;
+        opt.innerHTML = key;
+        select.appendChild(opt);
     });
 
-    // Check URL parameters for country filter
+    // Check URL parameters for legislature filter
     const urlParams = new URLSearchParams(window.location.search);
-    const countryParam = urlParams.get('country');
+    const legislatureParam = urlParams.get('legislature');
     
-    if (countryParam) {
+    if (legislatureParam) {
         // Decode the parameter and try to match it
-        const decodedCountry = decodeURIComponent(countryParam);
-        if (uniqueCountries.includes(decodedCountry)) {
-            countrySelect.value = decodedCountry;
-            populateLegislatureTypeDropdown();
+        const decodedLegislature = decodeURIComponent(legislatureParam);
+        if (uniqueKeys.includes(decodedLegislature)) {
+            select.value = decodedLegislature;
+            renderSelection();
         } else {
             // If parameter doesn't match, select the first one
-            if (uniqueCountries.length > 0) {
-                countrySelect.value = uniqueCountries[0];
-                populateLegislatureTypeDropdown();
+            if (uniqueKeys.length > 0) {
+                select.value = uniqueKeys[0];
+                renderSelection();
             }
         }
     } else {
         // Auto-select the first one if no parameter
-        if (uniqueCountries.length > 0) {
-            countrySelect.value = uniqueCountries[0];
-            populateLegislatureTypeDropdown();
+        if (uniqueKeys.length > 0) {
+            select.value = uniqueKeys[0];
+            renderSelection();
         }
     }
 }
 
-// Populate legislature type dropdown based on selected country
-function populateLegislatureTypeDropdown() {
-    const legislatureTypeSelect = document.getElementById('legislatureTypeSelect');
-    const countrySelect = document.getElementById('countrySelect');
-    const selectedCountry = countrySelect.value;
-    
-    // Clear existing options except the first one
-    legislatureTypeSelect.innerHTML = '<option value="">-- Select --</option>';
-    
-    if (!selectedCountry) return;
-    
-    // Get legislature types for the selected country
-    const countryData = electionData.filter(d => d.country === selectedCountry);
-    const uniqueTypes = [...new Set(countryData.map(d => d.body))].sort();
-    
-    uniqueTypes.forEach(type => {
-        let opt = document.createElement('option');
-        opt.value = type;
-        opt.innerHTML = type;
-        legislatureTypeSelect.appendChild(opt);
-    });
-    
-    // Auto-select the first type
-    if (uniqueTypes.length > 0) {
-        legislatureTypeSelect.value = uniqueTypes[0];
-        renderSelection();
-    }
-}
-
-// Update URL when legislature type is changed
-function updateLegislatureTypeParameter() {
-    // URL is not updated when legislature type changes
-}
-
-// Update URL when country is changed
-function updateCountryParameter() {
-    const selectedCountry = document.getElementById('countrySelect').value;
-    if (selectedCountry) {
+// Update URL when legislature is changed
+function updateURLParameter() {
+    const selectedKey = document.getElementById('electionSelect').value;
+    if (selectedKey) {
         const url = new URL(window.location);
-        url.searchParams.set('country', selectedCountry);
+        url.searchParams.set('legislature', selectedKey);
         window.history.replaceState({ path: url.href }, '', url.href);
     }
 }
 
 // 4. Render the Chart
 function renderSelection() {
-    const selectedType = document.getElementById('legislatureTypeSelect').value;
-    const selectedCountry = document.getElementById('countrySelect').value;
-    
-    const filtered = electionData.filter(d => d.body === selectedType && d.country === selectedCountry);
+    const selectedKey = document.getElementById('electionSelect').value;
+    const filtered = electionData.filter(d => `${d.country} - ${d.body}` === selectedKey);
     
     if (filtered.length === 0) return;
 
