@@ -225,13 +225,12 @@
         <div id="status">Loading data from Google Sheets...</div>
     </div>
 
-    <div class="controls">
-        <label><b>Select Legislature Type:</b> </label>
-        <div id="legislatureTypeButtons"></div>
-    </div>
-
     <div id="chart-container"></div>
     <div id="majority-info" class="majority-badge"></div>
+
+    <div class="controls">
+        <div id="legislatureTypeButtons"></div>
+    </div>
 </div>
 
 <script>
@@ -265,8 +264,8 @@ function parseCSV(text) {
     
     // Convert CSV rows to JSON objects
     electionData = lines.slice(1).map(line => {
-        // This handle cases where party names might contain commas inside quotes
-        const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g); 
+        // Parse CSV handling quoted fields with commas
+        const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
         if (!values) return null;
         
         // Get color from the Color Hex column (fallback to values[7] if not found)
@@ -448,7 +447,7 @@ function renderSelection() {
             labelFormat: '{name} <span style="opacity: 0.6">({y})</span>',
             layout: 'horizontal',
             align: 'center',
-            verticalAlign: 'top'
+            verticalAlign: 'bottom'
         },
         series: [{
             name: 'Seats',
@@ -457,7 +456,11 @@ function renderSelection() {
             size: chartSize,
             startAngle: -100,
             endAngle: 100,
-            dataLabels: { enabled: false }
+            dataLabels: { 
+                enabled: true,
+                format: '{point.name}',
+                style: { fontSize: labelFontSize, fontWeight: 'bold' }
+            }
         }],
         tooltip: {
             headerFormat: '',
