@@ -1,64 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Election Results Dashboard</title>
     <script src="https://code.highcharts.com/highcharts.js"></script>
     <script src="https://code.highcharts.com/modules/item-series.js"></script>
-    
+
     <style>
-        * { box-sizing: border-box; }
-        
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: #f0f2f5; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            padding: 15px; 
-            margin: 0; 
+        * {
+            box-sizing: border-box;
         }
-        
-        .container-wrapper { 
-            background: white; 
-            padding: 20px; 
-            border-radius: 12px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
-            width: 100%; 
-            max-width: 1000px; 
-            margin-top: 10px; 
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            margin: 0;
         }
-        
-        .header { 
-            text-align: center; 
-            margin-bottom: 20px; 
+
+        .container-wrapper {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 1000px;
+            margin-top: 10px;
         }
-        
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
         .header h1 {
             font-size: 28px;
             margin: 0 0 10px 0;
         }
-        
-        .controls { 
-            text-align: center; 
-            margin-bottom: 20px; 
+
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
-        
+
         .controls label {
             font-size: 14px;
         }
-        
-        select { 
-            padding: 10px 15px; 
-            border-radius: 25px; 
-            border: 2px solid #007bff; 
-            font-size: 14px; 
-            cursor: pointer; 
-            background: white; 
+
+        select {
+            padding: 10px 15px;
+            border-radius: 25px;
+            border: 2px solid #007bff;
+            font-size: 14px;
+            cursor: pointer;
+            background: white;
             outline: none;
             width: 100%;
             max-width: 400px;
@@ -95,24 +98,24 @@
             background: #007bff;
             color: white;
         }
-        
-        #chart-container { 
-            height: 500px; 
-            width: 100%; 
+
+        #chart-container {
+            height: 500px;
+            width: 100%;
             min-height: 400px;
         }
-        
-        #status { 
-            font-weight: bold; 
-            color: #007bff; 
-            margin-bottom: 10px; 
+
+        #status {
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 10px;
             font-size: 14px;
         }
-        
-        .majority-badge { 
-            text-align: center; 
-            margin-top: 10px; 
-            font-size: 14px; 
+
+        .majority-badge {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
             color: #444;
             padding: 10px;
         }
@@ -217,268 +220,303 @@
         }
     </style>
 </head>
+
 <body>
 
-<div class="container-wrapper">
-    <div class="header">
-        
-        <div id="status">Loading data from Google Sheets...</div>
+    <div class="container-wrapper">
+        <div class="header">
+
+            <div id="status">Loading data from Google Sheets...</div>
+        </div>
+
+        <div id="chart-container"></div>
+        <div id="majority-info" class="majority-badge"></div>
+
+        <div class="controls">
+            <div id="legislatureTypeButtons"></div>
+        </div>
     </div>
 
-    <div id="chart-container"></div>
-    <div id="majority-info" class="majority-badge"></div>
+    <script>
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSyXtnBVLH8-6135tCS-f9EX3WBxfY8ZVe77zvJx4YIRDv3X7_9xZ68vWsUiWmkldfIL1jCRWkOxpfB/pub?gid=947087391&single=true&output=csv';
 
-    <div class="controls">
-        <div id="legislatureTypeButtons"></div>
-    </div>
-</div>
+        let electionData = [];
+        let chart;
 
-<script>
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSyXtnBVLH8-6135tCS-f9EX3WBxfY8ZVe77zvJx4YIRDv3X7_9xZ68vWsUiWmkldfIL1jCRWkOxpfB/pub?gid=947087391&single=true&output=csv';
-
-let electionData = [];
-let chart;
-
-// 1. Fetch data from Google Sheets
-async function fetchData() {
-    try {
-        const response = await fetch(CSV_URL);
-        const csvText = await response.text();
-        parseCSV(csvText);
-        document.getElementById('status').innerText = "Data Loaded Successfully";
-        setTimeout(() => document.getElementById('status').style.display = 'none', 3000);
-    } catch (error) {
-        console.error("Error fetching CSV:", error);
-        document.getElementById('status').innerText = "Error loading data. Please check the URL.";
-        document.getElementById('status').style.color = "red";
-    }
-}
-
-// 2. Simple CSV Parser
-function parseCSV(text) {
-    const lines = text.trim().split('\n');
-    const headers = lines[0].split(',');
-    
-    // Find the index of the Color Hex column
-    const colorHexIndex = headers.findIndex(h => h.trim().toLowerCase().includes('color'));
-    
-    // Convert CSV rows to JSON objects
-    electionData = lines.slice(1).map(line => {
-        // Parse CSV handling quoted fields with commas
-        const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-        if (!values) return null;
-        
-        // Get color from the Color Hex column (fallback to values[7] if not found)
-        let colorValue = '#808080'; // default gray
-        if (colorHexIndex >= 0 && values[colorHexIndex]) {
-            colorValue = values[colorHexIndex].replace(/"/g, '').trim();
-        } else if (values[7]) {
-            colorValue = values[7].replace(/"/g, '').trim();
+        // 1. Fetch data from Google Sheets
+        async function fetchData() {
+            try {
+                const response = await fetch(CSV_URL);
+                const csvText = await response.text();
+                parseCSV(csvText);
+                document.getElementById('status').innerText = "Data Loaded Successfully";
+                setTimeout(() => document.getElementById('status').style.display = 'none', 3000);
+            } catch (error) {
+                console.error("Error fetching CSV:", error);
+                document.getElementById('status').innerText = "Error loading data. Please check the URL.";
+                document.getElementById('status').style.color = "red";
+            }
         }
-        
-        return {
-            country: values[0].replace(/"/g, ''),
-            body: values[1].replace(/"/g, ''),
-            totalSeats: parseInt(values[2]),
-            year: values[3],
-            party: values[4].replace(/"/g, ''),
-            seats: parseInt(values[5]),
-            ideologyGroup: values[6].replace(/"/g, ''),
-            colorHex: colorValue
-        };
-    }).filter(item => item !== null);
 
-    populateDropdown();
-}
+        // 2. Simple CSV Parser
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            const headers = lines[0].split(',');
 
-// 3. Setup Dropdowns
-function populateDropdown() {
-    // Get unique countries
-    const uniqueCountries = [...new Set(electionData.map(d => d.country))].sort();
+            // Find the index of the Color Hex column
+            const colorHexIndex = headers.findIndex(h => h.trim().toLowerCase().includes('color'));
 
-    // Check URL parameters for country filter
-    const urlParams = new URLSearchParams(window.location.search);
-    const countryParam = urlParams.get('country');
-    
-    let selectedCountry;
-    if (countryParam) {
-        // Decode the parameter and try to match it
-        const decodedCountry = decodeURIComponent(countryParam);
-        selectedCountry = uniqueCountries.includes(decodedCountry) ? decodedCountry : uniqueCountries[0];
-    } else {
-        // Auto-select the first one if no parameter
-        selectedCountry = uniqueCountries.length > 0 ? uniqueCountries[0] : null;
-    }
-    
-    // Store the selected country globally
-    window.selectedCountry = selectedCountry;
-    
-    // Update URL with the selected country
-    if (selectedCountry) {
-        const url = new URL(window.location);
-        url.searchParams.set('country', selectedCountry);
-        window.history.replaceState({ path: url.href }, '', url.href);
-    }
-    
-    populateLegislatureTypeDropdown();
-}
+            // Convert CSV rows to JSON objects
+            electionData = lines.slice(1).map(line => {
+                // Parse CSV handling quoted fields with commas
+                const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+                if (!values) return null;
 
-// Populate legislature type buttons based on selected country
-function populateLegislatureTypeDropdown() {
-    const buttonContainer = document.getElementById('legislatureTypeButtons');
-    const selectedCountry = window.selectedCountry;
-    
-    // Clear existing buttons
-    buttonContainer.innerHTML = '';
-    
-    if (!selectedCountry) return;
-    
-    // Get legislature types for the selected country
-    const countryData = electionData.filter(d => d.country === selectedCountry);
-    const uniqueTypes = [...new Set(countryData.map(d => d.body))].sort();
-    
-    uniqueTypes.forEach((type, index) => {
-        let btn = document.createElement('button');
-        btn.className = 'legislature-btn';
-        btn.innerHTML = type;
-        btn.onclick = () => selectLegislatureType(type, btn);
-        buttonContainer.appendChild(btn);
-        
-        // Auto-select the first button
-        if (index === 0) {
-            btn.classList.add('active');
+                // Get color from the Color Hex column (fallback to values[7] if not found)
+                let colorValue = '#808080'; // default gray
+                if (colorHexIndex >= 0 && values[colorHexIndex]) {
+                    colorValue = values[colorHexIndex].replace(/"/g, '').trim();
+                } else if (values[7]) {
+                    colorValue = values[7].replace(/"/g, '').trim();
+                }
+
+                return {
+                    country: values[0].replace(/"/g, ''),
+                    body: values[1].replace(/"/g, ''),
+                    totalSeats: parseInt(values[2]),
+                    year: values[3],
+                    party: values[4].replace(/"/g, ''),
+                    seats: parseInt(values[5]),
+                    ideologyGroup: values[6].replace(/"/g, ''),
+                    colorHex: colorValue
+                };
+            }).filter(item => item !== null);
+
+            populateDropdown();
+        }
+
+        // 3. Setup Dropdowns
+        function populateDropdown() {
+            // Get unique countries
+            const uniqueCountries = [...new Set(electionData.map(d => d.country))].sort();
+
+            // Check URL parameters for country filter
+            const urlParams = new URLSearchParams(window.location.search);
+            const countryParam = urlParams.get('country');
+
+            let selectedCountry;
+            if (countryParam) {
+                // Decode the parameter and try to match it
+                const decodedCountry = decodeURIComponent(countryParam);
+                selectedCountry = uniqueCountries.includes(decodedCountry) ? decodedCountry : uniqueCountries[0];
+            } else {
+                // Auto-select the first one if no parameter
+                selectedCountry = uniqueCountries.length > 0 ? uniqueCountries[0] : null;
+            }
+
+            // Store the selected country globally
+            window.selectedCountry = selectedCountry;
+
+            // Update URL with the selected country
+            if (selectedCountry) {
+                const url = new URL(window.location);
+                url.searchParams.set('country', selectedCountry);
+                window.history.replaceState({ path: url.href }, '', url.href);
+            }
+
+            populateLegislatureTypeDropdown();
+        }
+
+        // Populate legislature type buttons based on selected country
+        function populateLegislatureTypeDropdown() {
+            const buttonContainer = document.getElementById('legislatureTypeButtons');
+            const selectedCountry = window.selectedCountry;
+
+            // Clear existing buttons
+            buttonContainer.innerHTML = '';
+
+            if (!selectedCountry) return;
+
+            // Get legislature types for the selected country
+            const countryData = electionData.filter(d => d.country === selectedCountry);
+            const uniqueTypes = [...new Set(countryData.map(d => d.body))].sort();
+
+            uniqueTypes.forEach((type, index) => {
+                let btn = document.createElement('button');
+                btn.className = 'legislature-btn';
+                btn.innerHTML = type;
+                btn.onclick = () => selectLegislatureType(type, btn);
+                buttonContainer.appendChild(btn);
+
+                // Auto-select the first button
+                if (index === 0) {
+                    btn.classList.add('active');
+                    window.selectedLegislatureType = type;
+                    renderSelection();
+                }
+            });
+        }
+
+        // Handle legislature type button selection
+        function selectLegislatureType(type, buttonElement) {
+            // Remove active class from all buttons
+            document.querySelectorAll('.legislature-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Add active class to clicked button
+            buttonElement.classList.add('active');
+
+            // Update selected legislature type
             window.selectedLegislatureType = type;
+
+            // Render the chart with the new selection
             renderSelection();
         }
-    });
-}
 
-// Handle legislature type button selection
-function selectLegislatureType(type, buttonElement) {
-    // Remove active class from all buttons
-    document.querySelectorAll('.legislature-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    // Add active class to clicked button
-    buttonElement.classList.add('active');
-    
-    // Update selected legislature type
-    window.selectedLegislatureType = type;
-    
-    // Render the chart with the new selection
-    renderSelection();
-}
+        // Update URL when legislature type is changed
+        function updateLegislatureTypeParameter() {
+            // URL is not updated when legislature type changes
+        }
 
-// Update URL when legislature type is changed
-function updateLegislatureTypeParameter() {
-    // URL is not updated when legislature type changes
-}
+        // Function to assign spectrum position (0 = far left, 10 = far right)
+        function getSpectrumPosition(ideologyGroup) {
+            const ideology = ideologyGroup.toLowerCase();
 
-// 4. Render the Chart
-function renderSelection() {
-    const selectedType = window.selectedLegislatureType;
-    const selectedCountry = window.selectedCountry;
-    
-    const filtered = electionData.filter(d => d.body === selectedType && d.country === selectedCountry);
-    
-    if (filtered.length === 0) return;
+            if (ideology.includes('far left') || ideology.includes('extreme left') || ideology.includes('communist')) return 0;
+            if (ideology.includes('left') && !ideology.includes('center')) return 1;
+            if (ideology.includes('center-left') || ideology.includes('centre-left') || ideology.includes('social democrat')) return 2;
+            if (ideology.includes('center') || ideology.includes('centre')) return 3;
+            if (ideology.includes('center-right') || ideology.includes('centre-right') || ideology.includes('liberal') || ideology.includes('conservative') || ideology.includes('christian-democrat') || ideology.includes('christian democrat')) return 4;
+            if (ideology.includes('right') && !ideology.includes('center')) return 5;
+            if (ideology.includes('far right') || ideology.includes('extreme right') || ideology.includes('nationalist') || ideology.includes('fascist')) return 6;
 
-    const totalSeats = filtered[0].totalSeats;
-    const majority = Math.floor(totalSeats / 2) + 1;
-    
-    // Create chart data with color information from each party
-    const chartData = filtered.map(d => ({
-        name: d.party,
-        y: d.seats,
-        color: d.colorHex,
-        ideologyGroup: d.ideologyGroup
-    }));
+            return 3; // Default to center
+        }
 
-    document.getElementById('majority-info').innerHTML = `Total Seats: <b>${totalSeats}</b> | Majority Required: <b>${majority}</b>`;
+        // 4. Render the Chart
+        function renderSelection() {
+            const selectedType = window.selectedLegislatureType;
+            const selectedCountry = window.selectedCountry;
 
-    if (chart) chart.destroy();
+            const filtered = electionData.filter(d => d.body === selectedType && d.country === selectedCountry);
 
-    // Responsive sizing based on screen width
-    const isMobile = window.innerWidth <= 768;
-    const isSmallMobile = window.innerWidth <= 480;
-    
-    const chartSize = isSmallMobile ? '150%' : isMobile ? '160%' : '170%';
-    const titleFontSize = isSmallMobile ? '16px' : isMobile ? '18px' : '24px';
-    const labelFontSize = isSmallMobile ? '10px' : isMobile ? '12px' : '14px';
+            if (filtered.length === 0) return;
 
-    chart = Highcharts.chart('chart-container', {
-        chart: { 
-            type: 'item',
-            responsive: {
-                rules: [{
-                    condition: { maxWidth: 480 },
-                    chartOptions: {
-                        legend: { enabled: true, layout: 'vertical', align: 'center', verticalAlign: 'bottom', y: 0 }
-                    }
-                }]
-            }
-        },
-        title: { 
-            text: filtered[0].country + ' Election ' + filtered[0].year,
-            style: { fontSize: titleFontSize, fontWeight: 'bold' }
-        },
-        subtitle: { 
-            text: filtered[0].body,
-            style: { fontSize: isSmallMobile ? '11px' : isMobile ? '12px' : '14px' }
-        },
-        xAxis: {
-            plotLines: [{
-                value: 0,
-                color: '#444',
-                dashStyle: 'LongDash',
-                width: 2,
-                zIndex: 5,
-                label: { 
-                    text: `Majority: ${majority}`, 
-                    verticalAlign: 'top',
-                    textAlign: 'center',
-                    y: -10,
-                    style: { fontWeight: 'bold', fontSize: labelFontSize }
+            const totalSeats = filtered[0].totalSeats;
+            const majority = Math.floor(totalSeats / 2) + 1;
+
+            // Group parties by ideology and aggregate seats
+            const ideologyMap = {};
+            filtered.forEach(d => {
+                if (!ideologyMap[d.ideologyGroup]) {
+                    ideologyMap[d.ideologyGroup] = {
+                        name: d.ideologyGroup,
+                        seats: 0,
+                        color: d.colorHex,
+                        parties: []
+                    };
                 }
-            }]
-        },
-        legend: {
-            labelFormat: '{name} <span style="opacity: 0.6">({y})</span>',
-            layout: 'horizontal',
-            align: 'center',
-            verticalAlign: 'bottom'
-        },
-        series: [{
-            name: 'Seats',
-            data: chartData,
-            center: ['50%', '88%'],
-            size: chartSize,
-            startAngle: -100,
-            endAngle: 100,
-            dataLabels: { 
-                enabled: true,
-                format: '{point.name}',
-                style: { fontSize: labelFontSize, fontWeight: 'bold' }
-            }
-        }],
-        tooltip: {
-            headerFormat: '',
-            pointFormat: '<b>{point.name}</b><br/>Ideology: {point.ideologyGroup}<br/>{point.y} seats'
-        },
-        credits: { enabled: false }
-    });
-}
+                ideologyMap[d.ideologyGroup].seats += d.seats;
+                ideologyMap[d.ideologyGroup].parties.push(d.party);
+            });
 
-// Handle window resize to re-render chart responsively
-window.addEventListener('resize', () => {
-    const selectedKey = document.getElementById('electionSelect').value;
-    if (selectedKey) renderSelection();
-});
+            // Convert to array and sort by spectrum position (left to right)
+            const chartData = Object.values(ideologyMap)
+                .map(d => ({
+                    name: d.name,
+                    y: d.seats,
+                    color: d.color,
+                    parties: d.parties,
+                    spectrumPos: getSpectrumPosition(d.name)
+                }))
+                .sort((a, b) => a.spectrumPos - b.spectrumPos);
 
-// Initialize on page load
-fetchData();
-</script>
+            document.getElementById('majority-info').innerHTML = `Total Seats: <b>${totalSeats}</b> | Majority Required: <b>${majority}</b>`;
+
+            if (chart) chart.destroy();
+
+            // Responsive sizing based on screen width
+            const isMobile = window.innerWidth <= 768;
+            const isSmallMobile = window.innerWidth <= 480;
+
+            const chartSize = isSmallMobile ? '150%' : isMobile ? '160%' : '170%';
+            const titleFontSize = isSmallMobile ? '16px' : isMobile ? '18px' : '24px';
+            const labelFontSize = isSmallMobile ? '10px' : isMobile ? '12px' : '14px';
+
+            chart = Highcharts.chart('chart-container', {
+                chart: {
+                    type: 'item',
+                    responsive: {
+                        rules: [{
+                            condition: { maxWidth: 480 },
+                            chartOptions: {
+                                legend: { enabled: true, layout: 'vertical', align: 'center', verticalAlign: 'bottom', y: 0 }
+                            }
+                        }]
+                    }
+                },
+                title: {
+                    text: filtered[0].country + ' Election ' + filtered[0].year,
+                    style: { fontSize: titleFontSize, fontWeight: 'bold' }
+                },
+                subtitle: {
+                    text: filtered[0].body,
+                    style: { fontSize: isSmallMobile ? '11px' : isMobile ? '12px' : '14px' }
+                },
+                xAxis: {
+                    plotLines: [{
+                        value: 0,
+                        color: '#444',
+                        dashStyle: 'LongDash',
+                        width: 2,
+                        zIndex: 5,
+                        label: {
+                            text: `Majority: ${majority}`,
+                            verticalAlign: 'top',
+                            textAlign: 'center',
+                            y: -10,
+                            style: { fontWeight: 'bold', fontSize: labelFontSize }
+                        }
+                    }]
+                },
+                legend: {
+                    labelFormat: '{name} <span style="opacity: 0.6">({y})</span>',
+                    layout: 'horizontal',
+                    align: 'center',
+                    verticalAlign: 'bottom'
+                },
+                series: [{
+                    name: 'Seats',
+                    data: chartData,
+                    center: ['50%', '88%'],
+                    size: chartSize,
+                    startAngle: -100,
+                    endAngle: 100,
+                    dataLabels: {
+                        enabled: true,
+                        format: '{point.name}',
+                        style: { fontSize: labelFontSize, fontWeight: 'bold' }
+                    }
+                }],
+                tooltip: {
+                    headerFormat: '',
+                    pointFormat: '<b>{point.name}</b><br/>{point.y} seats<br/><span style="font-size: 0.9em; opacity: 0.8;">Parties: {point.parties}</span>'
+                },
+                credits: { enabled: false }
+            });
+        }
+
+        // Handle window resize to re-render chart responsively
+        window.addEventListener('resize', () => {
+            const selectedKey = document.getElementById('electionSelect').value;
+            if (selectedKey) renderSelection();
+        });
+
+        // Initialize on page load
+        fetchData();
+    </script>
 
 </body>
+
 </html>

@@ -293,6 +293,41 @@ function updateURLParameter() {
     }
 }
 
+// Function to assign spectrum position (0 = far left, 6 = far right)
+function getSpectrumPosition(ideologyGroup) {
+    const ideology = ideologyGroup.toLowerCase();
+
+    // Check specific ideologies first to avoid false matches
+    // Far Left (0)
+    if (ideology.includes('far left') || ideology.includes('extreme left') || ideology.includes('communist') || ideology.includes('marxist') || ideology.includes('trotskyist')) return 0;
+
+    // Left (1)
+    if ((ideology.includes('left') || ideology.includes('socialist') || ideology.includes('labour') || ideology.includes('labor')) && !ideology.includes('center') && !ideology.includes('far')) return 1;
+
+    // Center-Left (2)
+    if (ideology.includes('center-left') || ideology.includes('centre-left') || ideology.includes('social democrat') || ideology.includes('social-democrat')) return 2;
+
+    // Center (3) - includes multiple center variants
+    if (ideology.includes('center') || ideology.includes('centre') || ideology.includes('centrist') || ideology.includes('moderate')) return 3;
+
+    // Center-Right (4) - more specific terms first
+    if (ideology.includes('center-right') || ideology.includes('centre-right') || ideology.includes('christian-democrat') || ideology.includes('christian democrat') || ideology.includes('christian-democracy')) return 4;
+
+    // Right (5) - check before far right
+    if ((ideology.includes('right') || ideology.includes('conservative') || ideology.includes('liberal') || ideology.includes('republican')) && !ideology.includes('center') && !ideology.includes('far') && !ideology.includes('alt')) return 5;
+
+    // Far Right (6)
+    if (ideology.includes('far right') || ideology.includes('extreme right') || ideology.includes('nationalist') || ideology.includes('fascist') || ideology.includes('alt-right') || ideology.includes('alt right')) return 6;
+
+    // Special categories (treated as center by default)
+    if (ideology.includes('green') || ideology.includes('ecology') || ideology.includes('environmental')) return 3;
+    if (ideology.includes('regional') || ideology.includes('independ') || ideology.includes('populist')) return 3;
+    if (ideology.includes('liberal') && (ideology.includes('progressive') || ideology.includes('social'))) return 2;
+    if (ideology.includes('conservative') && ideology.includes('social')) return 4;
+
+    return 3; // Default to center
+}
+
 // 4. Render the Chart
 function renderSelection() {
     const selectedKey = document.getElementById('electionSelect').value;
@@ -303,12 +338,31 @@ function renderSelection() {
     const totalSeats = filtered[0].totalSeats;
     const majority = Math.floor(totalSeats / 2) + 1;
     
-    // Create chart data with color information from each party
-    const chartData = filtered.map(d => ({
-        name: d.party,
-        y: d.seats,
-        color: d.colorHex
-    }));
+    // Group parties by ideology and aggregate seats
+    const ideologyMap = {};
+    filtered.forEach(d => {
+        if (!ideologyMap[d.ideologyGroup]) {
+            ideologyMap[d.ideologyGroup] = {
+                name: d.ideologyGroup,
+                seats: 0,
+                color: d.colorHex,
+                parties: []
+            };
+        }
+        ideologyMap[d.ideologyGroup].seats += d.seats;
+        ideologyMap[d.ideologyGroup].parties.push(d.party);
+    });
+    
+    // Convert to array and sort by spectrum position (left to right)
+    const chartData = Object.values(ideologyMap)
+        .map(d => ({
+            name: d.name,
+            y: d.seats,
+            color: d.color,
+            parties: d.parties,
+            spectrumPos: getSpectrumPosition(d.name)
+        }))
+        .sort((a, b) => a.spectrumPos - b.spectrumPos);
 
     document.getElementById('majority-info').innerHTML = `Total Seats: <b>${totalSeats}</b> | Majority Required: <b>${majority}</b>`;
 
@@ -375,7 +429,7 @@ function renderSelection() {
         }],
         tooltip: {
             headerFormat: '',
-            pointFormat: '<b>{point.name}</b>: {point.y} seats'
+            pointFormat: '<b>{point.name}</b><br/>{point.y} seats<br/><span style="font-size: 0.9em; opacity: 0.8;">Parties: {point.parties}</span>'
         },
         credits: { enabled: false }
     });
