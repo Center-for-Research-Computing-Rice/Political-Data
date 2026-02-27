@@ -35,6 +35,7 @@
         .header {
             text-align: center;
             margin-bottom: 20px;
+            flex-shrink: 0;
         }
 
         .header h1 {
@@ -48,6 +49,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            flex-shrink: 0;
         }
 
         .controls label {
@@ -101,7 +103,9 @@
         #chart-container {
             flex: 1;
             width: 100%;
+            min-width: 0;
             min-height: 0;
+            overflow: hidden;
         }
 
         #status {
@@ -117,9 +121,98 @@
             font-size: 14px;
             color: #444;
             padding: 10px;
+            flex-shrink: 0;
         }
 
-        /* Media Queries for Small Screens */
+        /* Small vertical screens (portrait phones, short viewports) */
+        @media (max-height: 700px) {
+            .container-wrapper {
+                padding: 10px 12px;
+            }
+
+            .header {
+                margin-bottom: 8px;
+            }
+
+            .header h1 {
+                font-size: 18px;
+                margin: 0 0 4px 0;
+            }
+
+            #status {
+                font-size: 12px;
+                margin-bottom: 4px;
+            }
+
+            .controls {
+                margin-bottom: 8px;
+                gap: 6px;
+            }
+
+            #legislatureTypeButtons {
+                gap: 6px;
+                margin: 4px auto;
+                max-height: 44px;
+                overflow-x: auto;
+                overflow-y: hidden;
+                flex-wrap: nowrap;
+                justify-content: flex-start;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 4px;
+            }
+
+            .legislature-btn {
+                padding: 6px 12px;
+                font-size: 12px;
+                flex-shrink: 0;
+            }
+
+            .majority-badge {
+                font-size: 11px;
+                padding: 4px 8px;
+                margin-top: 4px;
+            }
+        }
+
+        @media (max-height: 500px) {
+            .container-wrapper {
+                padding: 6px 10px;
+            }
+
+            .header {
+                margin-bottom: 4px;
+            }
+
+            .header h1 {
+                font-size: 16px;
+                margin: 0 0 2px 0;
+            }
+
+            #status {
+                font-size: 11px;
+            }
+
+            .controls {
+                margin-bottom: 4px;
+            }
+
+            #legislatureTypeButtons {
+                max-height: 38px;
+            }
+
+            .legislature-btn {
+                padding: 5px 10px;
+                font-size: 11px;
+            }
+
+            .majority-badge {
+                font-size: 10px;
+                padding: 2px 6px;
+                margin-top: 2px;
+            }
+        }
+
+        /* Media Queries for Small Screens (narrow width) */
         @media (max-width: 768px) {
             .container-wrapper {
                 padding: 15px;
@@ -416,33 +509,74 @@
 
             if (chart) chart.destroy();
 
-            // Responsive sizing based on screen width
+            // Responsive sizing: use container dimensions so chart never clips on the sides
+            const chartEl = document.getElementById('chart-container');
+            let containerWidth = chartEl ? chartEl.offsetWidth : 0;
+            let containerHeight = chartEl ? chartEl.offsetHeight : 0;
+            if (containerWidth <= 0 || containerHeight <= 0) {
+                containerWidth = window.innerWidth;
+                containerHeight = window.innerHeight;
+            }
+            const aspectRatio = containerHeight > 0 ? containerWidth / containerHeight : 1;
+
             const isMobile = window.innerWidth <= 768;
             const isSmallMobile = window.innerWidth <= 480;
+            const isShortScreen = window.innerHeight <= 700;
+            const isVeryShortScreen = window.innerHeight <= 500;
 
-            const chartSize = isSmallMobile ? '150%' : isMobile ? '160%' : '170%';
-            const titleFontSize = isSmallMobile ? '16px' : isMobile ? '18px' : '24px';
-            const labelFontSize = isSmallMobile ? '10px' : isMobile ? '12px' : '14px';
+            // Chart uses 95% of width (no segment labels)
+            const chartSize = '95%';
+
+            let titleFontSize = isSmallMobile ? '16px' : isMobile ? '18px' : '24px';
+            let labelFontSize = isSmallMobile ? '10px' : isMobile ? '11px' : '13px';
+            let centerY = '78%';
+            let subtitleFontSize = isSmallMobile ? '11px' : isMobile ? '12px' : '14px';
+
+            if (isVeryShortScreen) {
+                titleFontSize = '14px';
+                labelFontSize = '9px';
+                centerY = '72%';
+                subtitleFontSize = '10px';
+            } else if (isShortScreen) {
+                titleFontSize = isShortScreen ? '15px' : titleFontSize;
+                labelFontSize = isShortScreen ? '10px' : labelFontSize;
+                centerY = '75%';
+                subtitleFontSize = isShortScreen ? '11px' : subtitleFontSize;
+            }
+
+            // Margins: minimal sides so chart uses ~95% width; bottom for legend gap
+            const marginTop = isVeryShortScreen ? 40 : isShortScreen ? 48 : 58;
+            const marginSide = 8;
+            const marginBottom = isVeryShortScreen ? 76 : isShortScreen ? 84 : 92;
+            const legendMargin = isVeryShortScreen ? 14 : 18;
+            const legendY = 10;
 
             chart = Highcharts.chart('chart-container', {
                 chart: {
                     type: 'item',
+                    spacing: [6, 6, 6, 6],
+                    margin: [marginTop, marginSide, marginBottom, marginSide],
+                    width: null,
+                    height: null,
                     responsive: {
                         rules: [{
                             condition: { maxWidth: 480 },
                             chartOptions: {
-                                legend: { enabled: true, layout: 'vertical', align: 'center', verticalAlign: 'bottom', y: 0 }
+                                chart: { margin: [44, 8, 82, 8] },
+                                legend: { margin: 16, y: 8, itemStyle: { fontSize: '11px' } }
                             }
                         }]
                     }
                 },
                 title: {
                     text: filtered[0].country + ' Election ' + filtered[0].year,
-                    style: { fontSize: titleFontSize, fontWeight: 'bold' }
+                    style: { fontSize: titleFontSize, fontWeight: 'bold' },
+                    margin: 8
                 },
                 subtitle: {
                     text: filtered[0].body,
-                    style: { fontSize: isSmallMobile ? '11px' : isMobile ? '12px' : '14px' }
+                    style: { fontSize: subtitleFontSize },
+                    margin: 4
                 },
                 xAxis: {
                     plotLines: [{
@@ -464,20 +598,19 @@
                     labelFormat: '{name} <span style="opacity: 0.6">({y})</span>',
                     layout: 'horizontal',
                     align: 'center',
-                    verticalAlign: 'bottom'
+                    verticalAlign: 'bottom',
+                    margin: legendMargin,
+                    y: legendY,
+                    itemStyle: { fontSize: isSmallMobile ? '11px' : '12px' }
                 },
                 series: [{
                     name: 'Seats',
                     data: chartData,
-                    center: ['50%', '88%'],
+                    center: ['50%', centerY],
                     size: chartSize,
                     startAngle: -100,
                     endAngle: 100,
-                    dataLabels: {
-                        enabled: true,
-                        format: '{point.name}',
-                        style: { fontSize: labelFontSize, fontWeight: 'bold' }
-                    }
+                    dataLabels: { enabled: false }
                 }],
                 tooltip: {
                     headerFormat: '',
@@ -489,8 +622,7 @@
 
         // Handle window resize to re-render chart responsively
         window.addEventListener('resize', () => {
-            const selectedKey = document.getElementById('electionSelect').value;
-            if (selectedKey) renderSelection();
+            if (window.selectedLegislatureType) renderSelection();
         });
 
         // Initialize on page load
