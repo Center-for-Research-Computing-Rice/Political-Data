@@ -16,21 +16,20 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #f0f2f5;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 15px;
             margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
         }
 
         .container-wrapper {
             background: white;
             padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 1000px;
-            margin-top: 10px;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
         }
 
         .header {
@@ -100,9 +99,9 @@
         }
 
         #chart-container {
-            height: 500px;
+            flex: 1;
             width: 100%;
-            min-height: 400px;
+            min-height: 0;
         }
 
         #status {
@@ -122,13 +121,8 @@
 
         /* Media Queries for Small Screens */
         @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-
             .container-wrapper {
                 padding: 15px;
-                margin-top: 5px;
             }
 
             .header h1 {
@@ -159,10 +153,6 @@
                 font-size: 13px;
             }
 
-            #chart-container {
-                height: 400px;
-                min-height: 300px;
-            }
 
             .majority-badge {
                 font-size: 13px;
@@ -171,13 +161,8 @@
         }
 
         @media (max-width: 480px) {
-            body {
-                padding: 8px;
-            }
-
             .container-wrapper {
                 padding: 12px;
-                border-radius: 8px;
             }
 
             .header h1 {
@@ -205,11 +190,6 @@
             .legislature-btn {
                 padding: 7px 12px;
                 font-size: 12px;
-            }
-
-            #chart-container {
-                height: 300px;
-                min-height: 250px;
             }
 
             .majority-badge {
