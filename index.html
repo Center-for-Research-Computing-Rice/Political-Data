@@ -24,7 +24,7 @@
 
         .container-wrapper {
             background: white;
-            padding: 20px;
+            padding: 8px;
             width: 100vw;
             height: 100vh;
             display: flex;
@@ -34,7 +34,7 @@
 
         .header {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 6px;
             flex-shrink: 0;
         }
 
@@ -45,10 +45,10 @@
 
         .controls {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 4px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 4px;
             flex-shrink: 0;
         }
 
@@ -117,10 +117,10 @@
 
         .majority-badge {
             text-align: center;
-            margin-top: 10px;
+            margin-top: 2px;
             font-size: 14px;
             color: #444;
-            padding: 10px;
+            padding: 4px;
             flex-shrink: 0;
         }
 
@@ -458,13 +458,13 @@
 
             if (ideology.includes('far left') || ideology.includes('extreme left') || ideology.includes('communist')) return 0;
             if (ideology.includes('left') && !ideology.includes('center')) return 1;
-            if (ideology.includes('center-left') || ideology.includes('centre-left') || ideology.includes('social democrat')) return 2;
-            if (ideology.includes('center') || ideology.includes('centre')) return 3;
-            if (ideology.includes('center-right') || ideology.includes('centre-right') || ideology.includes('liberal') || ideology.includes('conservative') || ideology.includes('christian-democrat') || ideology.includes('christian democrat')) return 4;
+            if (ideology.includes('center-left') || ideology.includes('centre-left') || ideology.includes('social democrat')|| ideology.includes('liberal')) return 2;
+            if (ideology.includes('center') || ideology.includes('centre') || ideology.includes('Non-Aligned') || ideology.includes('christian-democrat')) return 3;
+            if (ideology.includes('Center-Right') || ideology.includes('centre-right') || ideology.includes('conservative')  || ideology.includes('christian democrat')) return 4;
             if (ideology.includes('right') && !ideology.includes('center')) return 5;
             if (ideology.includes('far right') || ideology.includes('extreme right') || ideology.includes('nationalist') || ideology.includes('fascist')) return 6;
 
-            return 3; // Default to center
+            return 2; // Default to center
         }
 
         // 4. Render the Chart
@@ -544,12 +544,12 @@
                 subtitleFontSize = isShortScreen ? '11px' : subtitleFontSize;
             }
 
-            // Margins: minimal sides so chart uses ~95% width; bottom for legend gap
-            const marginTop = isVeryShortScreen ? 40 : isShortScreen ? 48 : 58;
-            const marginSide = 8;
-            const marginBottom = isVeryShortScreen ? 76 : isShortScreen ? 84 : 92;
-            const legendMargin = isVeryShortScreen ? 14 : 18;
-            const legendY = 10;
+            // Margins: minimal sides so chart uses maximum width; minimal bottom for legend gap
+            const marginTop = isVeryShortScreen ? 8 : isShortScreen ? 10 : 12;
+            const marginSide = 2;
+            const marginBottom = isVeryShortScreen ? 18 : isShortScreen ? 20 : 24;
+            const legendMargin = isVeryShortScreen ? 2 : 4;
+            const legendY = 2;
 
             chart = Highcharts.chart('chart-container', {
                 chart: {
