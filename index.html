@@ -544,10 +544,10 @@
                 subtitleFontSize = isShortScreen ? '11px' : subtitleFontSize;
             }
 
-            // Margins: minimal sides so chart uses maximum width; minimal bottom for legend gap
+            // Margins: minimal sides so chart uses maximum width; increased bottom for legend gap
             const marginTop = isVeryShortScreen ? 8 : isShortScreen ? 10 : 12;
             const marginSide = 2;
-            const marginBottom = isVeryShortScreen ? 18 : isShortScreen ? 20 : 24;
+            const marginBottom = isVeryShortScreen ? 40 : isShortScreen ? 48 : 56;
             const legendMargin = isVeryShortScreen ? 2 : 4;
             const legendY = 2;
 
@@ -571,7 +571,7 @@
                 title: {
                     text: filtered[0].country + ' Election ' + filtered[0].year,
                     style: { fontSize: titleFontSize, fontWeight: 'bold' },
-                    margin: 8
+                    margin: 2
                 },
                 subtitle: {
                     text: filtered[0].body,
