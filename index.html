@@ -457,8 +457,8 @@
             const ideology = ideologyGroup.toLowerCase();
 
             if (ideology.includes('far left') || ideology.includes('extreme left') || ideology.includes('communist')) return 0;
-            if (ideology.includes('left') && !ideology.includes('center')) return 1;
-            if (ideology.includes('center-left') || ideology.includes('centre-left') || ideology.includes('social democrat')|| ideology.includes('liberal')) return 2;
+            if (ideology.includes('left') || ideology.includes('social democrat')&& !ideology.includes('center')) return 1;
+            if (ideology.includes('center-left') || ideology.includes('centre-left') || ideology.includes('liberal')) return 2;
             if (ideology.includes('center') || ideology.includes('centre') || ideology.includes('Non-Aligned') || ideology.includes('christian-democrat')) return 3;
             if (ideology.includes('Center-Right') || ideology.includes('centre-right') || ideology.includes('conservative')  || ideology.includes('christian democrat')) return 4;
             if (ideology.includes('right') && !ideology.includes('center')) return 5;
