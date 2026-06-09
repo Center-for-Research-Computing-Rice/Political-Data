@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Election Results Dashboard</title>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/item-series.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container-wrapper {
+            background: white;
+            padding: 8px;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 6px;
+            flex-shrink: 0;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin: 0 0 10px 0;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .controls label {
+            font-size: 14px;
+        }
+
+        select {
+            padding: 10px 15px;
+            border-radius: 25px;
+            border: 2px solid #007bff;
+            font-size: 14px;
+            cursor: pointer;
+            background: white;
+            outline: none;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        #legislatureTypeButtons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 10px auto;
+            max-width: 800px;
+        }
+
+        .legislature-btn {
+            padding: 10px 20px;
+            border-radius: 25px;
+            border: 2px solid #007bff;
+            font-size: 14px;
+            cursor: pointer;
+            background: white;
+            color: #007bff;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .legislature-btn:hover {
+            background: #007bff;
+            color: white;
+        }
+
+        .legislature-btn.active {
+            background: #007bff;
+            color: white;
+        }
+
+        #chart-container {
+            flex: 1;
+            width: 100%;
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        #status {
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .majority-badge {
+            text-align: center;
+            margin-top: 2px;
+            font-size: 14px;
+            color: #444;
+            padding: 4px;
+            flex-shrink: 0;
+        }
+
+        /* Small vertical screens (portrait phones, short viewports) */
+        @media (max-height: 700px) {
+            .container-wrapper {
+                padding: 10px 12px;
+            }
+
+            .header {
+                margin-bottom: 8px;
+            }
+
+            .header h1 {
+                font-size: 18px;
+                margin: 0 0 4px 0;
+            }
+
+            #status {
+                font-size: 12px;
+                margin-bottom: 4px;
+            }
+
+            .controls {
+                margin-bottom: 8px;
+                gap: 6px;
+            }
+
+            #legislatureTypeButtons {
+                gap: 6px;
+                margin: 4px auto;
+                max-height: 44px;
+                overflow-x: auto;
+                overflow-y: hidden;
+                flex-wrap: nowrap;
+                justify-content: flex-start;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 4px;
+            }
+
+            .legislature-btn {
+                padding: 6px 12px;
+                font-size: 12px;
+                flex-shrink: 0;
+            }
+
+            .majority-badge {
+                font-size: 11px;
+                padding: 4px 8px;
+                margin-top: 4px;
+            }
+        }
+
+        @media (max-height: 500px) {
+            .container-wrapper {
+                padding: 6px 10px;
+            }
+
+            .header {
+                margin-bottom: 4px;
+            }
+
+            .header h1 {
+                font-size: 16px;
+                margin: 0 0 2px 0;
+            }
+
+            #status {
+                font-size: 11px;
+            }
+
+            .controls {
+                margin-bottom: 4px;
+            }
+
+            #legislatureTypeButtons {
+                max-height: 38px;
+            }
+
+            .legislature-btn {
+                padding: 5px 10px;
+                font-size: 11px;
+            }
+
+            .majority-badge {
+                font-size: 10px;
+                padding: 2px 6px;
+                margin-top: 2px;
+            }
+        }
+
+        /* Media Queries for Small Screens (narrow width) */
+        @media (max-width: 768px) {
+            .container-wrapper {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 22px;
+                margin-bottom: 5px;
+            }
+
+            .controls {
+                margin-bottom: 15px;
+                gap: 8px;
+            }
+
+            .controls label {
+                font-size: 13px;
+            }
+
+            select {
+                font-size: 13px;
+                padding: 8px 12px;
+            }
+
+            #legislatureTypeButtons {
+                gap: 8px;
+            }
+
+            .legislature-btn {
+                padding: 8px 14px;
+                font-size: 13px;
+            }
+
+
+            .majority-badge {
+                font-size: 13px;
+                margin-top: 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container-wrapper {
+                padding: 12px;
+            }
+
+            .header h1 {
+                font-size: 18px;
+                margin-bottom: 3px;
+            }
+
+            #status {
+                font-size: 12px;
+            }
+
+            .controls label {
+                font-size: 12px;
+            }
+
+            select {
+                font-size: 12px;
+                padding: 8px 10px;
+            }
+
+            #legislatureTypeButtons {
+                gap: 6px;
+            }
+
+            .legislature-btn {
+                padding: 7px 12px;
+                font-size: 12px;
+            }
+
+            .majority-badge {
+                font-size: 12px;
+                padding: 8px;
+                margin-top: 5px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container-wrapper">
+        <div class="header">
+
+            <div id="status">Loading data from Google Sheets...</div>
+        </div>
+
+        <div id="chart-container"></div>
+        <div id="majority-info" class="majority-badge"></div>
+
+        <div class="controls">
+            <div id="legislatureTypeButtons"></div>
+        </div>
+    </div>
+
+    <script>
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSyXtnBVLH8-6135tCS-f9EX3WBxfY8ZVe77zvJx4YIRDv3X7_9xZ68vWsUiWmkldfIL1jCRWkOxpfB/pub?gid=947087391&single=true&output=csv';
+
+        let electionData = [];
+        let chart;
+
+        // 1. Fetch data from Google Sheets
+        async function fetchData() {
+            try {
+                const response = await fetch(CSV_URL);
+                const csvText = await response.text();
+                parseCSV(csvText);
+                document.getElementById('status').innerText = "Data Loaded Successfully";
+                setTimeout(() => document.getElementById('status').style.display = 'none', 3000);
+            } catch (error) {
+                console.error("Error fetching CSV:", error);
+                document.getElementById('status').innerText = "Error loading data. Please check the URL.";
+                document.getElementById('status').style.color = "red";
+            }
+        }
+
+        // 2. Simple CSV Parser
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            const headers = lines[0].split(',');
+
+            // Find the index of the Color Hex column
+            const colorHexIndex = headers.findIndex(h => h.trim().toLowerCase().includes('color'));
+
+            // Convert CSV rows to JSON objects
+            electionData = lines.slice(1).map(line => {
+                // Parse CSV handling quoted fields with commas
+                const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+                if (!values) return null;
+
+                // Get color from the Color Hex column (fallback to values[7] if not found)
+                let colorValue = '#808080'; // default gray
+                if (colorHexIndex >= 0 && values[colorHexIndex]) {
+                    colorValue = values[colorHexIndex].replace(/"/g, '').trim();
+                } else if (values[7]) {
+                    colorValue = values[7].replace(/"/g, '').trim();
+                }
+
+                return {
+                    country: values[0].replace(/"/g, ''),
+                    body: values[1].replace(/"/g, ''),
+                    totalSeats: parseInt(values[2]),
+                    year: values[3],
+                    party: values[4].replace(/"/g, ''),
+                    seats: parseInt(values[5]),
+                    ideologyGroup: values[6].replace(/"/g, ''),
+                    colorHex: colorValue
+                };
+            }).filter(item => item !== null);
+
+            populateDropdown();
+        }
+
+        // 3. Setup Dropdowns
+        function populateDropdown() {
+            // Get unique countries
+            const uniqueCountries = [...new Set(electionData.map(d => d.country))].sort();
+
+            // Check URL parameters for country filter
+            const urlParams = new URLSearchParams(window.location.search);
+            const countryParam = urlParams.get('country');
+
+            let selectedCountry;
+            if (countryParam) {
+                // Decode the parameter and try to match it
+                const decodedCountry = decodeURIComponent(countryParam);
+                selectedCountry = uniqueCountries.includes(decodedCountry) ? decodedCountry : uniqueCountries[0];
+            } else {
+                // Auto-select the first one if no parameter
+                selectedCountry = uniqueCountries.length > 0 ? uniqueCountries[0] : null;
+            }
+
+            // Store the selected country globally
+            window.selectedCountry = selectedCountry;
+
+            // Update URL with the selected country
+            if (selectedCountry) {
+                const url = new URL(window.location);
+                url.searchParams.set('country', selectedCountry);
+                window.history.replaceState({ path: url.href }, '', url.href);
+            }
+
+            populateLegislatureTypeDropdown();
+        }
+
+        // Populate legislature type buttons based on selected country
+        function populateLegislatureTypeDropdown() {
+            const buttonContainer = document.getElementById('legislatureTypeButtons');
+            const selectedCountry = window.selectedCountry;
+
+            // Clear existing buttons
+            buttonContainer.innerHTML = '';
+
+            if (!selectedCountry) return;
+
+            // Get legislature types for the selected country
+            const countryData = electionData.filter(d => d.country === selectedCountry);
+            const uniqueTypes = [...new Set(countryData.map(d => d.body))].sort();
+
+            uniqueTypes.forEach((type, index) => {
+                let btn = document.createElement('button');
+                btn.className = 'legislature-btn';
+                btn.innerHTML = type;
+                btn.onclick = () => selectLegislatureType(type, btn);
+                buttonContainer.appendChild(btn);
+
+                // Auto-select the first button
+                if (index === 0) {
+                    btn.classList.add('active');
+                    window.selectedLegislatureType = type;
+                    renderSelection();
+                }
+            });
+        }
+
+        // Handle legislature type button selection
+        function selectLegislatureType(type, buttonElement) {
+            // Remove active class from all buttons
+            document.querySelectorAll('.legislature-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Add active class to clicked button
+            buttonElement.classList.add('active');
+
+            // Update selected legislature type
+            window.selectedLegislatureType = type;
+
+            // Render the chart with the new selection
+            renderSelection();
+        }
+
+        // Update URL when legislature type is changed
+        function updateLegislatureTypeParameter() {
+            // URL is not updated when legislature type changes
+        }
+
+        // Function to assign spectrum position (0 = far left, 10 = far right)
+        function getSpectrumPosition(ideologyGroup) {
+            const ideology = ideologyGroup.toLowerCase();
+
+            if (ideology.includes('far left') || ideology.includes('extreme left') || ideology.includes('communist')) return 0;
+            if (ideology.includes('left') || ideology.includes('social democrat')&& !ideology.includes('center')) return 1;
+            if (ideology.includes('center-left') || ideology.includes('centre-left') || ideology.includes('liberal')) return 2;
+            if (ideology.includes('center') || ideology.includes('centre') || ideology.includes('Non-Aligned') || ideology.includes('christian-democrat')) return 3;
+            if (ideology.includes('Center-Right') || ideology.includes('centre-right') || ideology.includes('conservative')  || ideology.includes('christian democrat')) return 4;
+            if (ideology.includes('right') && !ideology.includes('center')) return 5;
+            if (ideology.includes('far right') || ideology.includes('extreme right') || ideology.includes('nationalist') || ideology.includes('fascist')) return 6;
+
+            return 2; // Default to center
+        }
+
+        // 4. Render the Chart
+        function renderSelection() {
+            const selectedType = window.selectedLegislatureType;
+            const selectedCountry = window.selectedCountry;
+
+            const filtered = electionData.filter(d => d.body === selectedType && d.country === selectedCountry);
+
+            if (filtered.length === 0) return;
+
+            const totalSeats = filtered[0].totalSeats;
+            const majority = Math.floor(totalSeats / 2) + 1;
+
+            // Group parties by ideology and aggregate seats
+            const ideologyMap = {};
+            filtered.forEach(d => {
+                if (!ideologyMap[d.ideologyGroup]) {
+                    ideologyMap[d.ideologyGroup] = {
+                        name: d.ideologyGroup,
+                        seats: 0,
+                        color: d.colorHex,
+                        parties: []
+                    };
+                }
+                ideologyMap[d.ideologyGroup].seats += d.seats;
+                ideologyMap[d.ideologyGroup].parties.push(d.party);
+            });
+
+            // Convert to array and sort by spectrum position (left to right)
+            const chartData = Object.values(ideologyMap)
+                .map(d => ({
+                    name: d.name,
+                    y: d.seats,
+                    color: d.color,
+                    parties: d.parties,
+                    spectrumPos: getSpectrumPosition(d.name)
+                }))
+                .sort((a, b) => a.spectrumPos - b.spectrumPos);
+
+            document.getElementById('majority-info').innerHTML = `Total Seats: <b>${totalSeats}</b> | Majority Required: <b>${majority}</b>`;
+
+            if (chart) chart.destroy();
+
+            // Responsive sizing: use container dimensions so chart never clips on the sides
+            const chartEl = document.getElementById('chart-container');
+            let containerWidth = chartEl ? chartEl.offsetWidth : 0;
+            let containerHeight = chartEl ? chartEl.offsetHeight : 0;
+            if (containerWidth <= 0 || containerHeight <= 0) {
+                containerWidth = window.innerWidth;
+                containerHeight = window.innerHeight;
+            }
+            const aspectRatio = containerHeight > 0 ? containerWidth / containerHeight : 1;
+
+            const isMobile = window.innerWidth <= 768;
+            const isSmallMobile = window.innerWidth <= 480;
+            const isShortScreen = window.innerHeight <= 700;
+            const isVeryShortScreen = window.innerHeight <= 500;
+
+            // Chart uses 95% of width (no segment labels)
+            const chartSize = '95%';
+
+            let titleFontSize = isSmallMobile ? '16px' : isMobile ? '18px' : '24px';
+            let labelFontSize = isSmallMobile ? '10px' : isMobile ? '11px' : '13px';
+            let centerY = '78%';
+            let subtitleFontSize = isSmallMobile ? '11px' : isMobile ? '12px' : '14px';
+
+            if (isVeryShortScreen) {
+                titleFontSize = '14px';
+                labelFontSize = '9px';
+                centerY = '72%';
+                subtitleFontSize = '10px';
+            } else if (isShortScreen) {
+                titleFontSize = isShortScreen ? '15px' : titleFontSize;
+                labelFontSize = isShortScreen ? '10px' : labelFontSize;
+                centerY = '75%';
+                subtitleFontSize = isShortScreen ? '11px' : subtitleFontSize;
+            }
+
+            // Margins: minimal sides so chart uses maximum width; increased bottom for legend gap
+            const marginTop = isVeryShortScreen ? 8 : isShortScreen ? 10 : 12;
+            const marginSide = 2;
+            const marginBottom = isVeryShortScreen ? 40 : isShortScreen ? 48 : 56;
+            const legendMargin = isVeryShortScreen ? 2 : 4;
+            const legendY = 2;
+
+            chart = Highcharts.chart('chart-container', {
+                chart: {
+                    type: 'item',
+                    spacing: [6, 6, 6, 6],
+                    margin: [marginTop, marginSide, marginBottom, marginSide],
+                    width: null,
+                    height: null,
+                    responsive: {
+                        rules: [{
+                            condition: { maxWidth: 480 },
+                            chartOptions: {
+                                chart: { margin: [44, 8, 82, 8] },
+                                legend: { margin: 16, y: 8, itemStyle: { fontSize: '11px' } }
+                            }
+                        }]
+                    }
+                },
+                title: {
+                    text: filtered[0].country + ' Election ' + filtered[0].year,
+                    style: { fontSize: titleFontSize, fontWeight: 'bold' },
+                    margin: 2
+                },
+                subtitle: {
+                    text: filtered[0].body,
+                    style: { fontSize: subtitleFontSize },
+                    margin: 4
+                },
+                xAxis: {
+                    plotLines: [{
+                        value: 0,
+                        color: '#444',
+                        dashStyle: 'LongDash',
+                        width: 2,
+                        zIndex: 5,
+                        label: {
+                            text: `Majority: ${majority}`,
+                            verticalAlign: 'top',
+                            textAlign: 'center',
+                            y: -10,
+                            style: { fontWeight: 'bold', fontSize: labelFontSize }
+                        }
+                    }]
+                },
+                legend: {
+                    labelFormat: '{name} <span style="opacity: 0.6">({y})</span>',
+                    layout: 'horizontal',
+                    align: 'center',
+                    verticalAlign: 'bottom',
+                    margin: legendMargin,
+                    y: legendY,
+                    itemStyle: { fontSize: isSmallMobile ? '11px' : '12px' }
+                },
+                series: [{
+                    name: 'Seats',
+                    data: chartData,
+                    center: ['50%', centerY],
+                    size: chartSize,
+                    startAngle: -100,
+                    endAngle: 100,
+                    dataLabels: { enabled: false }
+                }],
+                tooltip: {
+                    headerFormat: '',
+                    pointFormat: '<b>{point.name}</b><br/>{point.y} seats<br/><span style="font-size: 0.9em; opacity: 0.8;">Parties: {point.parties}</span>'
+                },
+                credits: { enabled: false }
+            });
+        }
+
+        // Handle window resize to re-render chart responsively
+        window.addEventListener('resize', () => {
+            if (window.selectedLegislatureType) renderSelection();
+        });
+
+        // Initialize on page load
+        fetchData();
+    </script>
+
+</body>
+
+</html>
