@@ -379,6 +379,7 @@ function renderSelection() {
     chart = Highcharts.chart('chart-container', {
         chart: { 
             type: 'item',
+            backgroundColor: '#ffffff',
             responsive: {
                 rules: [{
                     condition: { maxWidth: 480 },
@@ -390,11 +391,11 @@ function renderSelection() {
         },
         title: { 
             text: filtered[0].country + ' Election ' + filtered[0].year,
-            style: { fontSize: titleFontSize, fontWeight: 'bold' }
+            style: { fontSize: titleFontSize, fontWeight: 'bold', color: '#000000' }
         },
         subtitle: { 
             text: filtered[0].body,
-            style: { fontSize: isSmallMobile ? '11px' : isMobile ? '12px' : '14px' }
+            style: { fontSize: isSmallMobile ? '11px' : isMobile ? '12px' : '14px', color: '#000000' }
         },
         xAxis: {
             plotLines: [{
@@ -408,7 +409,7 @@ function renderSelection() {
                     verticalAlign: 'top',
                     textAlign: 'center',
                     y: -10,
-                    style: { fontWeight: 'bold', fontSize: labelFontSize }
+                    style: { fontWeight: 'bold', fontSize: labelFontSize, color: '#000000' }
                 }
             }]
         },
@@ -416,7 +417,8 @@ function renderSelection() {
             labelFormat: '{name} <span style="opacity: 0.6">({y})</span>',
             layout: 'horizontal',
             align: 'center',
-            verticalAlign: 'top'
+            verticalAlign: 'top',
+            itemStyle: { color: '#000000' }
         },
         series: [{
             name: 'Seats',
