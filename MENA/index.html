@@ -567,6 +567,7 @@
             chart = Highcharts.chart('chart-container', {
                 chart: {
                     type: 'item',
+                    backgroundColor: '#ffffff',
                     spacing: [6, 6, 6, 6],
                     margin: [marginTop, marginSide, marginBottom, marginSide],
                     width: null,
@@ -583,12 +584,12 @@
                 },
                 title: {
                     text: filtered[0].country + ' Election ' + filtered[0].year,
-                    style: { fontSize: titleFontSize, fontWeight: 'bold' },
+                    style: { fontSize: titleFontSize, fontWeight: 'bold', color: '#000000' },
                     margin: 2
                 },
                 subtitle: {
                     text: filtered[0].body,
-                    style: { fontSize: subtitleFontSize },
+                    style: { fontSize: subtitleFontSize, color: '#000000' },
                     margin: 4
                 },
                 xAxis: {
@@ -603,7 +604,7 @@
                             verticalAlign: 'top',
                             textAlign: 'center',
                             y: -10,
-                            style: { fontWeight: 'bold', fontSize: labelFontSize }
+                            style: { fontWeight: 'bold', fontSize: labelFontSize, color: '#000000' }
                         }
                     }]
                 },
@@ -614,7 +615,7 @@
                     verticalAlign: 'bottom',
                     margin: legendMargin,
                     y: legendY,
-                    itemStyle: { fontSize: isSmallMobile ? '11px' : '12px' }
+                    itemStyle: { fontSize: isSmallMobile ? '11px' : '12px', color: '#000000' }
                 },
                 series: [{
                     name: 'Seats',
